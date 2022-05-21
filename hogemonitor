@@ -1,0 +1,82 @@
+#!/usr/bin/python3
+
+import re
+import time
+
+from Xlib import X, display
+
+FONT = '-schumacher-clean-bold-r-normal--8-80-75-75-c-80-iso646.1991-irv'
+
+def read_file(filename):
+    try:
+        return open(filename, 'r').read()
+    except:
+        return None
+
+def is_power_supplied():
+    out = read_file('/sys/class/power_supply/AC/online')
+    if out is None:
+        return '-'
+    return True if out.split()[0]=='1' else False
+
+def battery_capacity():
+    out = read_file('/sys/class/power_supply/BAT1/capacity')
+    if out is None:
+        return '-'
+    return int(out)
+
+def memory_used():
+    out = read_file('/proc/meminfo')
+    if out is None:
+        return '-'
+    try:
+        total = int(re.search(r'MemTotal: +(\d+) kB', out).group(1))
+        free = int(re.search(r'MemFree: +(\d+) kB', out).group(1))
+        used = total-free
+        used_ratio = used/total
+        return used_ratio
+    except:
+        return '-'
+
+def cpu():
+    out = read_file('/proc/cpuinfo')
+    if out is None:
+        return '-'
+    match = re.findall('cpu MHz\t+: (\d+.\d+)', out)
+    if len(match) == 0:
+        return '-'
+    freq = []
+    for m in match:
+        freq.append(float(m))
+    average = sum(freq)/len(freq)
+    minimum = min(freq)
+    maximum = max(freq)
+    return average, minimum, maximum
+        
+def main():
+    dsply = display.Display()
+    font = dsply.open_font(FONT)
+    print(font)
+    screen = dsply.screen()
+    window = screen.root.create_window(0,0,1920,20,0,screen.root_depth,X.InputOutput,X.CopyFromParent,background_pixel=screen.black_pixel,override_redirect=True, event_mask=X.ExposureMask, colormap=X.CopyFromParent)
+    window.change_attributes(backing_store=X.Always)
+    window.map()
+    gcs = window.create_gc(font=font, foreground = screen.white_pixel)
+    while True:
+        average, minimum, maximum = cpu()
+        status = 'power supply: {} | battery capacity: {} | memory used: {:.2f} % | CPU frequency: {:.3f} GHz ({:.3f} - {:.3f} GHz)'.format(is_power_supplied(),
+                                                                                                                                            battery_capacity(),
+                                                                                                                                            memory_used()*100,
+                                                                                                                                            average/1000,
+                                                                                                                                            minimum/1000,
+                                                                                                                                            maximum/1000)
+        geom = window.get_geometry()
+        window.clear_area(0,0,geom.width, geom.height)
+        chars = [c.encode() for c in list(status)]
+        window.poly_text(gcs, 0, 8, chars)
+        window.configure(stack_mode=X.Above)
+        time.sleep(1)
+
+if __name__ == '__main__':
+    main()
+
