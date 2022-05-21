@@ -52,11 +52,14 @@ def cpu():
     minimum = min(freq)
     maximum = max(freq)
     return average, minimum, maximum
-        
+
+def date():
+    now = time.strftime('%Y/%m/%d(%a) %H:%M:%S')
+    return now
+
 def main():
     dsply = display.Display()
     font = dsply.open_font(FONT)
-    print(font)
     screen = dsply.screen()
     window = screen.root.create_window(0,0,1920,20,0,screen.root_depth,X.InputOutput,X.CopyFromParent,background_pixel=screen.black_pixel,override_redirect=True, event_mask=X.ExposureMask, colormap=X.CopyFromParent)
     window.change_attributes(backing_store=X.Always)
@@ -64,12 +67,12 @@ def main():
     gcs = window.create_gc(font=font, foreground = screen.white_pixel)
     while True:
         average, minimum, maximum = cpu()
-        status = 'power supply: {} | battery capacity: {} | memory used: {:.2f} % | CPU frequency: {:.3f} GHz ({:.3f} - {:.3f} GHz)'.format(is_power_supplied(),
-                                                                                                                                            battery_capacity(),
-                                                                                                                                            memory_used()*100,
-                                                                                                                                            average/1000,
-                                                                                                                                            minimum/1000,
-                                                                                                                                            maximum/1000)
+        status = ''
+        status+='power supply: {} | '.format(is_power_supplied())
+        status+='battery capacity: {} | '.format(battery_capacity())
+        status+='memory used: {:.2f} % | '.format(memory_used()*100)
+        status+='CPU frequency: {:.3f} GHz ({:.3f} - {:.3f} GHz) | '.format(average/1000, minimum/1000, maximum/1000)
+        status+=date()
         geom = window.get_geometry()
         window.clear_area(0,0,geom.width, geom.height)
         chars = [c.encode() for c in list(status)]
