@@ -76,7 +76,11 @@ class hogemon:
             idle = current_idle - self.idle
             self.up = current_up
             self.idle = current_idle
-            return (self.cpus-idle/up)
+            load = self.cpus-idle/up
+            if load < 0:
+                return 0
+            else:
+                return load
         except:
             self.up = current_up
             self.idle = current_idle
