@@ -2,84 +2,175 @@
 
 import re
 import time
+import math
+import subprocess
+import os
+import sys
 
 from Xlib import X, display
 
 FONT = '-schumacher-clean-bold-r-normal--8-80-75-75-c-80-iso646.1991-irv'
 
-def read_file(filename):
-    try:
-        return open(filename, 'r').read()
-    except:
-        return None
+class hogemon:
+    def __init__(self):
+        self.up = None
+        self.idle = None
+        self.cpus = os.cpu_count()
 
-def is_power_supplied():
-    out = read_file('/sys/class/power_supply/AC/online')
-    if out is None:
-        return '-'
-    return True if out.split()[0]=='1' else False
+    def read_file(self, filename):
+        try:
+            return open(filename, 'r').read()
+        except:
+            return None
 
-def battery_capacity():
-    out = read_file('/sys/class/power_supply/BAT1/capacity')
-    if out is None:
-        return '-'
-    return int(out)
+    def get_power_status(self):
+        out = self.read_file('/sys/class/power_supply/AC/online')
+        if out is None:
+            return None
+        return True if out.split()[0]=='1' else False
 
-def memory_used():
-    out = read_file('/proc/meminfo')
-    if out is None:
-        return '-'
-    try:
-        total = int(re.search(r'MemTotal: +(\d+) kB', out).group(1))
-        free = int(re.search(r'MemFree: +(\d+) kB', out).group(1))
-        used = total-free
-        used_ratio = used/total
-        return used_ratio
-    except:
-        return '-'
+    def get_battery_capacity(self):
+        out = self.read_file('/sys/class/power_supply/BAT1/capacity')
+        if out is None:
+            return None
+        return int(out)/100
 
-def cpu():
-    out = read_file('/proc/cpuinfo')
-    if out is None:
-        return '-'
-    match = re.findall('cpu MHz\t+: (\d+.\d+)', out)
-    if len(match) == 0:
-        return '-'
-    freq = []
-    for m in match:
-        freq.append(float(m))
-    average = sum(freq)/len(freq)
-    minimum = min(freq)
-    maximum = max(freq)
-    return average, minimum, maximum
+    def memory_utilization(self):
+        out = self.read_file('/proc/meminfo')
+        if out is None:
+            return None
+        try:
+            total = int(re.search(r'MemTotal: +(\d+) kB', out).group(1))
+            free = int(re.search(r'MemFree: +(\d+) kB', out).group(1))
+            used = total-free
+            return (used, total)
+        except:
+            return None
 
-def date():
-    now = time.strftime('%Y/%m/%d(%a) %H:%M:%S')
-    return now
+    def get_average_cpu_frequency(self):
+        out = self.read_file('/proc/cpuinfo')
+        if out is None:
+            return None
+        match = re.findall('cpu MHz\t+: (\d+.\d+)', out)
+        if len(match) == 0:
+            return None
+        freq = []
+        for m in match:
+            freq.append(float(m))
+            average = sum(freq)/len(freq)
+            minimum = min(freq)
+            maximum = max(freq)
+        return average
+
+    def get_cpu_load(self):
+        out = self.read_file('/proc/uptime')
+        if out is None:
+            return None
+        match = re.findall('(\d+.\d+)', out)
+        if len(match) != 2:
+            return None
+        current_up = float(match[0])
+        current_idle = float(match[1])
+        try:
+            up = current_up - self.up
+            idle = current_idle - self.idle
+            self.up = current_up
+            self.idle = current_idle
+            return (self.cpus-idle/up)
+        except:
+            self.up = current_up
+            self.idle = current_idle
+            return None
+
+    def get_date(self):
+        now = time.strftime('%Y/%m/%d(%a) %H:%M:%S')
+        return now
+
+    def get_gpu_status(self):
+        out = subprocess.getoutput('nvidia-smi -q')
+        if 'not found' in out:
+            return None
+        try:
+            freq = int(re.search(r'  Clocks\n +Graphics +: (\d+) MHz', out).group(1))
+            util = int(re.search(r'Gpu +: (\d+) %', out).group(1))
+            return (freq, util)
+        except:
+            return None
+
+    def status_string(self):
+        status = ''
+        power = self.get_power_status()
+        if power is not None:
+            status += 'BAT: {}{}% | '.format('*' if self.get_power_status() else '', self.get_battery_capacity())
+        used, total = self.memory_utilization()
+        status += 'MEM: {:.2f}%  {:.1f}/{:.1f} GB | '.format((used/total)*100, used/1024/1024, total/1024/1024)
+        cpu_freq = self.get_average_cpu_frequency()
+        cpu_load = self.get_cpu_load()
+        if cpu_load is None:
+            cpu_load = 0.0
+        status += 'CPU: {:.2f}%  {:.2f} GHz | '.format(cpu_load*100, cpu_freq/1000)
+        gpu = self.get_gpu_status()
+        if gpu is not None:
+            status += 'GPU: {:.2f}%  {:.2f} GHz | '.format(gpu[1], gpu[0]/1000)
+        status += self.get_date()
+        return status
+
+def get_monitor_size_via_xrandr():
+    out = subprocess.getoutput('xrandr')
+    size = []
+    for line in out.split('\n'):
+        if ' connected' in line:
+            try:
+                match = re.search(r'(\d+)x(\d+)\+(\d+)\+(\d+)', line)
+                width = int(match.group(1))
+                height = int(match.group(2))
+                x = int(match.group(3))
+                y = int(match.group(4))
+            except:
+                m = re.search(r'(\d+)x(\d+)', line)
+                width = int(m.group(1))
+                height = int(m.group(2))
+                x, y = 0, 0
+            size.append({'width':width,
+                            'height':height,
+                            'x':x,
+                            'y':y})
+    return size
 
 def main():
-    dsply = display.Display()
-    font = dsply.open_font(FONT)
-    screen = dsply.screen()
-    window = screen.root.create_window(0,0,1920,20,0,screen.root_depth,X.InputOutput,X.CopyFromParent,background_pixel=screen.black_pixel,override_redirect=True, event_mask=X.ExposureMask, colormap=X.CopyFromParent)
+    monitor_sizes = get_monitor_size_via_xrandr()
+    try:
+        selected = monitor_sizes[int(sys.argv[1])]
+    except:
+        selected = monitor_sizes[0]
+    width = selected['width']
+    height = selected['height']
+    x = selected['x']
+    y = selected['y']
+    mon = hogemon()
+    disp = display.Display()
+    font = disp.open_font(FONT)
+    screen = disp.screen()
+    window = screen.root.create_window(x,y,width,8,0,
+                                       screen.root_depth,
+                                       X.InputOutput,
+                                       X.CopyFromParent,
+                                       background_pixel=screen.black_pixel,
+                                       override_redirect=True,
+                                       event_mask=X.ExposureMask,
+                                       colormap=X.CopyFromParent)
     window.change_attributes(backing_store=X.Always)
+    gcs = window.create_gc(font=font,
+                           foreground=screen.white_pixel)
     window.map()
-    gcs = window.create_gc(font=font, foreground = screen.white_pixel)
     while True:
-        average, minimum, maximum = cpu()
-        status = ''
-        status+='power supply: {} | '.format(is_power_supplied())
-        status+='battery capacity: {} | '.format(battery_capacity())
-        status+='memory used: {:.2f} % | '.format(memory_used()*100)
-        status+='CPU frequency: {:.3f} GHz ({:.3f} - {:.3f} GHz) | '.format(average/1000, minimum/1000, maximum/1000)
-        status+=date()
+        status = mon.status_string()
         geom = window.get_geometry()
         window.clear_area(0,0,geom.width, geom.height)
         chars = [c.encode() for c in list(status)]
         window.poly_text(gcs, 0, 8, chars)
         window.configure(stack_mode=X.Above)
-        time.sleep(1)
+        time.sleep(1-math.modf(time.time())[0])
 
 if __name__ == '__main__':
     main()
-
