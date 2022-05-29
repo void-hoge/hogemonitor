@@ -140,7 +140,7 @@ def get_monitor_size_via_xrandr():
 def main():
     monitor_sizes = get_monitor_size_via_xrandr()
     try:
-        selected = monitor_sizes[int(sys.argv[1])]
+        selected = monitor_sizes[int(sys.argv[1])%len(monitor_sizes)]
     except:
         selected = monitor_sizes[0]
     width = selected['width']
