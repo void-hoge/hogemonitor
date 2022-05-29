@@ -3,7 +3,7 @@
 
 ![](screenshot.png)
 
-- The default is battery, memory, CPU, GPU date and time monitor.
+- The default is battery, memory, CPU, GPU, date and time monitor.
   - Battery and GPU status will not displayed if it is unavailable.
 
 ## REQUIREMENTS
