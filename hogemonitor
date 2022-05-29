@@ -10,6 +10,7 @@ import sys
 from Xlib import X, display
 
 FONT = '-schumacher-clean-bold-r-normal--8-80-75-75-c-80-iso646.1991-irv'
+INTERVAL = 1
 
 class hogemon:
     def __init__(self):
@@ -174,7 +175,7 @@ def main():
         chars = [c.encode() for c in list(status)]
         window.poly_text(gcs, 0, 8, chars)
         window.configure(stack_mode=X.Above)
-        time.sleep(1-math.modf(time.time())[0])
+        time.sleep(INTERVAL-math.modf(time.time())[0])
 
 if __name__ == '__main__':
     main()
