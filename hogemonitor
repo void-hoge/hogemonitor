@@ -34,7 +34,7 @@ class hogemon:
         out = self.read_file('/sys/class/power_supply/BAT1/capacity')
         if out is None:
             return None
-        return int(out)/100
+        return int(out)
 
     def memory_utilization(self):
         out = self.read_file('/proc/meminfo')
