@@ -17,6 +17,11 @@ class hogemon:
         self.up = None
         self.idle = None
         self.cpus = os.cpu_count()
+        nvidiasmi = subprocess.getoutput('nvidia-smi -q')
+        if 'not found' in nvidiasmi:
+            self.is_nvidiasmi_available = False
+        else:
+            self.is_nvidiasmi_available = True
 
     def read_file(self, filename):
         try:
@@ -31,7 +36,7 @@ class hogemon:
         return True if out.split()[0]=='1' else False
 
     def get_battery_capacity(self):
-        out = self.read_file('/sys/class/power_supply/BAT1/capacity')
+        out = self.read_file('/sys/class/power_supply/BAT0/capacity')
         if out is None:
             return None
         return int(out)
@@ -93,14 +98,21 @@ class hogemon:
 
     def get_gpu_status(self):
         out = subprocess.getoutput('nvidia-smi -q')
-        if 'not found' in out:
-            return None
         try:
             freq = int(re.search(r'  Clocks\n +Graphics +: (\d+) MHz', out).group(1))
             util = int(re.search(r'Gpu +: (\d+) %', out).group(1))
             return (freq, util)
         except:
             return None
+
+    def get_network_status(self):
+        out = subprocess.getoutput('iwconfig')
+        try:
+            ESSID = re.search(r'ESSID:"(.+)"', out).group(1)
+            bitrate = re.search(r'Bit Rate=(\d+\.\d+ Mb/s)', out).group(1)
+            return f'{ESSID} {bitrate}'
+        except:
+            return ''
 
     def status_string(self):
         status = ''
@@ -114,9 +126,11 @@ class hogemon:
         if cpu_load is None:
             cpu_load = 0.0
         status += 'CPU: {:.2f}%  {:.2f} GHz | '.format(cpu_load*100, cpu_freq/1000)
-        gpu = self.get_gpu_status()
-        if gpu is not None:
-            status += 'GPU: {:.2f}%  {:.2f} GHz | '.format(gpu[1], gpu[0]/1000)
+        if self.is_nvidiasmi_available:
+            gpu = self.get_gpu_status()
+            if gpu is not None:
+                status += 'GPU: {:.2f}%  {:.2f} GHz | '.format(gpu[1], gpu[0]/1000)
+        status += f'{self.get_network_status()} |'
         status += self.get_date()
         return status
 

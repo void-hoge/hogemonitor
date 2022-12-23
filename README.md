@@ -3,13 +3,14 @@
 
 ![](screenshot.png)
 
-- The default is battery, memory, CPU, GPU, date and time monitor.
+- The default is battery, memory, CPU, GPU, date, network status, and date time monitor.
   - Battery and GPU status will not displayed if it is unavailable.
 
 ## REQUIREMENTS
 - python-xlib (https://pypi.org/project/python-xlib/)
 - X window system
 - Linux kernel (for CPU and memory status)
+- iwconfig
 - nvidia-smi (for GPU status)
 
 ## INSTALLATION
@@ -20,13 +21,13 @@ $ cp hogemonitor/hogemonitor /a/directory/added/to/the/PATH
 ```
 
 ## OPTION
-- `hogemonitor <num>`: Monitor number to display.
+- `hogemonitor <index>`: Monitor index to display.
 
 ## SEE ALSO
 - hogewm (https://github.com/void-hoge/hogewm.git )
   - You can toggle hogemonitor with ctrl+alt+v.
 
-## AUTHER
+## AUTHOR
 - void-hoge
 
 ## LICENSE
