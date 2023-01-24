@@ -120,18 +120,18 @@ class hogemon:
         status = ''
         power = self.get_power_status()
         if power is not None:
-            status += 'BAT: {}{}% | '.format('*' if self.get_power_status() else '', self.get_battery_capacity())
+            status += f'BAT: {"*" if self.get_power_status() else ""}{self.get_battery_capacity()}% | '
         used, total = self.memory_utilization()
-        status += 'MEM: {:.2f}%  {:.1f}/{:.1f} GB | '.format((used/total)*100, used/1024/1024, total/1024/1024)
+        status += f'MEM: {(used/total)*100:.2f}% {used/1024/1024:.1f}/{total/1024/1024:.1f} GiB | '
         cpu_freq = self.get_average_cpu_frequency()
         cpu_load = self.get_cpu_load()
         if cpu_load is None:
             cpu_load = 0.0
-        status += 'CPU: {:.2f}%  {:.2f} GHz | '.format(cpu_load*100, cpu_freq/1000)
+        status += f'CPU: {cpu_load*100:.2f}%  {cpu_freq/1000:.2f} GHz | '
         if self.is_nvidiasmi_available:
             gpu = self.get_gpu_status()
             if gpu is not None:
-                status += 'GPU: {:.2f}%  {:.2f} GHz | '.format(gpu[1], gpu[0]/1000)
+                status += f'GPU: {gpu[1]:.2f}%  {gpu[0]/1000:.2f} GHz | '
         status += f'WiFi: {self.get_network_status()} | '
         status += self.get_date()
         return status
