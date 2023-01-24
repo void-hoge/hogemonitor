@@ -3,7 +3,7 @@
 
 ![](screenshot.png)
 
-- The default is battery, memory, CPU, GPU, date, WiFi status, and date time monitor.
+- The default is battery, memory, CPU (load and frequency), GPU (load and frequency), WiFi status(ESSID, bit rate and link quality), and date time monitor.
   - Battery and GPU status will not displayed if it is unavailable.
 
 ## REQUIREMENTS
