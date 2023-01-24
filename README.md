@@ -3,14 +3,14 @@
 
 ![](screenshot.png)
 
-- The default is battery, memory, CPU, GPU, date, network status, and date time monitor.
+- The default is battery, memory, CPU, GPU, date, WiFi status, and date time monitor.
   - Battery and GPU status will not displayed if it is unavailable.
 
 ## REQUIREMENTS
 - python-xlib (https://pypi.org/project/python-xlib/)
 - X window system
 - Linux kernel (for CPU and memory status)
-- iwconfig
+- iwconfig (for WiFi status)
 - nvidia-smi (for GPU status)
 
 ## INSTALLATION

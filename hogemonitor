@@ -109,10 +109,12 @@ class hogemon:
         out = subprocess.getoutput('iwconfig')
         try:
             ESSID = re.search(r'ESSID:"(.+)"', out).group(1)
-            bitrate = re.search(r'Bit Rate=(\d+\.\d+ Mb/s)', out).group(1)
-            return f'{ESSID} {bitrate}'
+            bitrate = re.search(r'Bit Rate=(\d+ .+/s|\d+.\d+ .+/s)', out).group(1)
+            m = re.search(r'Link Quality=(\d+)/(\d+)', out)
+            quality = int(m.group(1))/int(m.group(2))
+            return f'{ESSID} {bitrate} {quality*100}%'
         except:
-            return ''
+            return 'No Available'
 
     def status_string(self):
         status = ''
@@ -130,7 +132,7 @@ class hogemon:
             gpu = self.get_gpu_status()
             if gpu is not None:
                 status += 'GPU: {:.2f}%  {:.2f} GHz | '.format(gpu[1], gpu[0]/1000)
-        status += f'{self.get_network_status()} |'
+        status += f'WiFi: {self.get_network_status()} |'
         status += self.get_date()
         return status
 
@@ -151,9 +153,9 @@ def get_monitor_size_via_xrandr():
                 height = int(m.group(2))
                 x, y = 0, 0
             size.append({'width':width,
-                            'height':height,
-                            'x':x,
-                            'y':y})
+                         'height':height,
+                         'x':x,
+                         'y':y})
     return size
 
 def main():
@@ -170,17 +172,19 @@ def main():
     disp = display.Display()
     font = disp.open_font(FONT)
     screen = disp.screen()
-    window = screen.root.create_window(x,y,width,8,0,
-                                       screen.root_depth,
-                                       X.InputOutput,
-                                       X.CopyFromParent,
-                                       background_pixel=screen.black_pixel,
-                                       override_redirect=True,
-                                       event_mask=X.ExposureMask,
-                                       colormap=X.CopyFromParent)
+    window = screen.root.create_window(
+        x,y,width,10,0,
+        screen.root_depth,
+        X.InputOutput,
+        X.CopyFromParent,
+        background_pixel=screen.black_pixel,
+        override_redirect=True,
+        event_mask=X.ExposureMask,
+        colormap=X.CopyFromParent)
     window.change_attributes(backing_store=X.Always)
-    gcs = window.create_gc(font=font,
-                           foreground=screen.white_pixel)
+    gcs = window.create_gc(
+        font=font,
+        foreground=screen.white_pixel)
     window.map()
     while True:
         status = mon.status_string()
