@@ -42,13 +42,12 @@ class hogemon:
         return int(out)
 
     def memory_utilization(self):
-        out = self.read_file('/proc/meminfo')
-        if out is None:
+        out = subprocess.getoutput('free')
+        if not out:
             return None
         try:
-            total = int(re.search(r'MemTotal: +(\d+) kB', out).group(1))
-            free = int(re.search(r'MemFree: +(\d+) kB', out).group(1))
-            used = total-free
+            lines = out.split('\n')
+            total, used, free, shared, buff, availabel = map(int,lines[1].split()[1:])
             return (used, total)
         except:
             return None
@@ -112,7 +111,7 @@ class hogemon:
             bitrate = re.search(r'Bit Rate=(\d+ .+/s|\d+.\d+ .+/s)', out).group(1)
             m = re.search(r'Link Quality=(\d+)/(\d+)', out)
             quality = int(m.group(1))/int(m.group(2))
-            return f'{ESSID} {bitrate} {quality*100}%'
+            return f'{ESSID} {bitrate} {quality*100:.0f}%'
         except:
             return 'Not Available'
 
